@@ -6,12 +6,14 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
 var (
-	dirFlag string
+	dirFlag   string
+	forceFlag bool
 )
 
 func Command() *cobra.Command {
@@ -22,6 +24,7 @@ func Command() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&dirFlag, "dir", "d", "/etc/nixos/nix-cfg", "Directory of git repository")
+	cmd.Flags().BoolVarP(&forceFlag, "force", "f", false, "Force run even if there are no changes")
 
 	return &cmd
 }
@@ -33,9 +36,15 @@ func runAction(cmd *cobra.Command, args []string) {
 		log.Fatalf("chdir to %s: %s", dirFlag, err)
 	}
 
-	_, err = shell("git", "pull")
+	out, err := shell("git", "pull")
+	fmt.Println(out)
 	if err != nil {
 		log.Fatalf("git pull err: %s", err)
+	}
+
+	if strings.Index(string(out), "Already up to date") > -1 && !forceFlag {
+		log.Println("No changes")
+		return
 	}
 
 	hostname, err := os.Hostname()
@@ -52,7 +61,7 @@ func runAction(cmd *cobra.Command, args []string) {
 		log.Fatalf("stat dir %s err: %s", hostname, err)
 	}
 
-	out, err := shell("nixos-rebuild", "switch", "-I", fmt.Sprintf("nixos-config=/etc/nixos/nix-cfg/%s/configuration.nix", hostname))
+	out, err = shell("nixos-rebuild", "switch", "-I", fmt.Sprintf("nixos-config=/etc/nixos/nix-cfg/%s/configuration.nix", hostname))
 	fmt.Println(out)
 	if err != nil {
 		log.Fatalf("rebuild err: %s", err)

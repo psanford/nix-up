@@ -42,7 +42,7 @@ func runAction(cmd *cobra.Command, args []string) {
 		log.Fatalf("git pull err: %s", err)
 	}
 
-	if strings.Index(string(out), "Already up to date") > -1 && !forceFlag {
+	if strings.Index(out, "Already up to date") > -1 && !forceFlag {
 		log.Println("No changes")
 		return
 	}
@@ -50,6 +50,10 @@ func runAction(cmd *cobra.Command, args []string) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		log.Fatalf("get hostname err: %s", err)
+	}
+
+	if hostname == "" {
+		log.Fatal("no hostname set")
 	}
 
 	_, err = os.Stat(hostname)
@@ -68,6 +72,7 @@ func runAction(cmd *cobra.Command, args []string) {
 	}
 }
 
-func shell(name string, arg ...string) ([]byte, error) {
-	return exec.Command(name, arg...).CombinedOutput()
+func shell(name string, arg ...string) (string, error) {
+	out, err := exec.Command(name, arg...).CombinedOutput()
+	return string(out), err
 }

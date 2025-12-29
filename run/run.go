@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	dirFlag   string
-	forceFlag bool
+	dirFlag    string
+	forceFlag  bool
+	updateFlag bool
 )
 
 func Command() *cobra.Command {
@@ -25,6 +26,7 @@ func Command() *cobra.Command {
 
 	cmd.Flags().StringVarP(&dirFlag, "dir", "d", "/etc/nixos/nix-cfg", "Directory of git repository")
 	cmd.Flags().BoolVarP(&forceFlag, "force", "f", false, "Force run even if there are no changes")
+	cmd.Flags().BoolVarP(&updateFlag, "update", "u", false, "Run nix-channel --update before rebuild")
 
 	return &cmd
 }
@@ -65,9 +67,11 @@ func runAction(cmd *cobra.Command, args []string) {
 		log.Fatalf("stat dir %s err: %s", hostname, err)
 	}
 
-	err = shellStream("nix-channel", "--update")
-	if err != nil {
-		log.Fatalf("rebuild err: %s", err)
+	if updateFlag {
+		err = shellStream("nix-channel", "--update")
+		if err != nil {
+			log.Fatalf("nix-channel update err: %s", err)
+		}
 	}
 
 	err = shellStream("nixos-rebuild", "switch", "-I", fmt.Sprintf("nixos-config=/etc/nixos/nix-cfg/%s/configuration.nix", hostname))

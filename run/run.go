@@ -65,6 +65,11 @@ func runAction(cmd *cobra.Command, args []string) {
 		log.Fatalf("stat dir %s err: %s", hostname, err)
 	}
 
+	err = shellStream("nix-channel", "--update")
+	if err != nil {
+		log.Fatalf("rebuild err: %s", err)
+	}
+
 	err = shellStream("nixos-rebuild", "switch", "-I", fmt.Sprintf("nixos-config=/etc/nixos/nix-cfg/%s/configuration.nix", hostname))
 	if err != nil {
 		log.Fatalf("rebuild err: %s", err)

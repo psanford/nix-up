@@ -42,7 +42,7 @@ func runAction(cmd *cobra.Command, args []string) {
 		log.Fatalf("git pull err: %s", err)
 	}
 
-	if strings.Index(out, "Already up to date") > -1 && !forceFlag {
+	if strings.Contains(out, "Already up to date") && !forceFlag {
 		log.Println("No changes")
 		return
 	}
@@ -65,8 +65,7 @@ func runAction(cmd *cobra.Command, args []string) {
 		log.Fatalf("stat dir %s err: %s", hostname, err)
 	}
 
-	out, err = shell("nixos-rebuild", "switch", "-I", fmt.Sprintf("nixos-config=/etc/nixos/nix-cfg/%s/configuration.nix", hostname))
-	fmt.Println(out)
+	err = shellStream("nixos-rebuild", "switch", "-I", fmt.Sprintf("nixos-config=/etc/nixos/nix-cfg/%s/configuration.nix", hostname))
 	if err != nil {
 		log.Fatalf("rebuild err: %s", err)
 	}
@@ -75,4 +74,11 @@ func runAction(cmd *cobra.Command, args []string) {
 func shell(name string, arg ...string) (string, error) {
 	out, err := exec.Command(name, arg...).CombinedOutput()
 	return string(out), err
+}
+
+func shellStream(name string, arg ...string) error {
+	cmd := exec.Command(name, arg...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
